@@ -1,61 +1,49 @@
-import asyncio
 import os
-from aiogram import Bot, Dispatcher, types
+import asyncio
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import FSInputFile
+from aiohttp import web
 
-# ԿԱՐԵՎՈՐ ՓՈՓՈԽՈՒԹՅՈՒՆ Render-ի համար:
-# Մենք թոքենը չենք գրում այստեղ: 
-# Բոտը այն կվերցնի "BOT_TOKEN" անունով Environment Variable-ից:
-TOKEN = os.getenv("BOT_TOKEN")
-
-bot = Bot(token=TOKEN)
+# Քո Տվյալները
+API_TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# Պանակի հասցեն (աշխատում է թե՛ համակարգչիդ վրա, թե՛ սերվերում)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-IMAGES_FOLDER = os.path.join(BASE_DIR, "images")
+# --- ՍԵՐՎԵՐԻ ՀԱՏՎԱԾ (Render-ի համար) ---
+async def handle(request):
+    return web.Response(text="Bot is alive!")
 
+async def start_server():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Render-ը սպասում է 10000 պորտին
+    site = web.TCPSite(runner, '0.0.0.0', 10000)
+    await site.start()
+
+# --- ԲՈՏԻ ՀԱՏՎԱԾ ---
 @dp.message(Command("start"))
-async def start(message: types.Message):
-    await message.answer(
-        "Բարև! 👋\n"
-        "Գրի'ր խնդրի համարը (օրինակ՝ 1, 2, 3...)"
-    )
+async def cmd_start(message: types.Message):
+    await message.answer("Բարև: Գրիր խնդրի համարը (1-6):")
 
-@dp.message()
-async def get_number(message: types.Message):
-    text = message.text.strip()
-    
-    # Ստուգում ենք՝ արդյոք օգտատերը թիվ է գրել
-    if not text.isdigit():
-        await message.answer("Խնդրում եմ մուտքագրել միայն թիվ (օրինակ՝ 5):")
-        return
-
-    file_name = f"{text}.jpeg"
-    image_path = os.path.join(IMAGES_FOLDER, file_name)
-
-    if os.path.exists(image_path):
-        waiting_msg = await message.answer("Սպասման մեջ է... ⏳")
-        await asyncio.sleep(3)
-        
-        photo = FSInputFile(image_path)
-        await message.answer_photo(photo=photo, caption=f"Խնդիր №{text}")
-        
-        # Օգտագործում ենք try/except, որ եթե հանկարծ սխալ լինի ջնջելիս, բոտը չանջատվի
-        try:
-            await waiting_msg.delete()
-        except:
-            pass
-    else:
-        await message.answer(f"Նկարը `{file_name}` չի գտնվել: 📘")
+@dp.message(F.text)
+async def send_solution(message: types.Message):
+    if message.text.isdigit():
+        file_path = f"images/{message.text}.jpeg"
+        if os.path.exists(file_path):
+            wait_msg = await message.answer("Սպասման մեջ է... ⏳")
+            await asyncio.sleep(3)
+            photo = types.FSInputFile(file_path)
+            await bot.send_photo(message.chat.id, photo)
+            await wait_msg.delete()
+        else:
+            await message.answer("Նկարը չի գտնվել:")
 
 async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
+    # Միացնում ենք և՛ սերվերը, և՛ բոտը միաժամանակ
+    await start_server()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("Բոտը կանգնեցված է")
+    asyncio.run(main())
