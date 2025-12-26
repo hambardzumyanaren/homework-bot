@@ -25,7 +25,7 @@ async def start_server():
 # --- ԲՈՏԻ ՀԱՏՎԱԾ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Բարև👋: Գրիր խնդրի համարը (1-36):")
+    await message.answer("Բարև👋: Գրիր խնդրի համարը (1-100):")
 
 @dp.message(F.text)
 async def send_solution(message: types.Message):
@@ -38,7 +38,7 @@ async def send_solution(message: types.Message):
             await bot.send_photo(message.chat.id, photo)
             await wait_msg.delete()
         else:
-            await message.answer("Նկարը չի գտնվել:")
+            await message.answer("Համարը չի գտնվել:")
 
 async def main():
     # Միացնում ենք և՛ սերվերը, և՛ բոտը միաժամանակ
@@ -47,4 +47,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
