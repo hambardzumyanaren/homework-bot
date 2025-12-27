@@ -25,7 +25,7 @@ async def start_server():
 # --- ԲՈՏԻ ՀԱՏՎԱԾ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Բարև👋: Գրիր խնդրի համարը (1-100):")
+    await message.answer("Բարև👋: Գրիր խնդրի համարը (1-250):")
 
 @dp.message(F.text)
 async def send_solution(message: types.Message):
@@ -47,5 +47,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
